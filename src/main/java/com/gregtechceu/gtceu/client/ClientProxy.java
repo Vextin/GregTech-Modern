@@ -81,6 +81,7 @@ public class ClientProxy extends CommonProxy {
 
     @SubscribeEvent
     public void modifyModels(ModelEvent.ModifyBakingResult event) {
+        AbstractPipeModel.invalidateCaches();
         PipeModelRegistry.registerModels(event.getModels()::put);
     }
 
