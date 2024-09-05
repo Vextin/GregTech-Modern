@@ -2,7 +2,6 @@ package com.gregtechceu.gtceu.common.data;
 
 import com.gregtechceu.gtceu.api.GTValues;
 import com.gregtechceu.gtceu.api.capability.IParallelHatch;
-import com.gregtechceu.gtceu.api.capability.recipe.EURecipeCapability;
 import com.gregtechceu.gtceu.api.capability.recipe.IRecipeCapabilityHolder;
 import com.gregtechceu.gtceu.api.data.medicalcondition.MedicalCondition;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
@@ -13,8 +12,6 @@ import com.gregtechceu.gtceu.api.machine.multiblock.CoilWorkableElectricMultiblo
 import com.gregtechceu.gtceu.api.recipe.GTRecipe;
 import com.gregtechceu.gtceu.api.recipe.OverclockingLogic;
 import com.gregtechceu.gtceu.api.recipe.RecipeHelper;
-import com.gregtechceu.gtceu.api.recipe.chance.logic.ChanceLogic;
-import com.gregtechceu.gtceu.api.recipe.content.Content;
 import com.gregtechceu.gtceu.api.recipe.content.ContentModifier;
 import com.gregtechceu.gtceu.api.recipe.logic.OCParams;
 import com.gregtechceu.gtceu.api.recipe.logic.OCResult;
@@ -22,7 +19,6 @@ import com.gregtechceu.gtceu.api.recipe.modifier.ParallelLogic;
 import com.gregtechceu.gtceu.api.recipe.modifier.RecipeModifier;
 import com.gregtechceu.gtceu.common.capability.EnvironmentalHazardSavedData;
 import com.gregtechceu.gtceu.config.ConfigHolder;
-import com.gregtechceu.gtceu.utils.GTUtil;
 
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.Util;
@@ -34,7 +30,6 @@ import com.mojang.datafixers.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -99,28 +94,13 @@ public class GTRecipeModifiers {
         public GTRecipe apply(MetaMachine machine, @NotNull GTRecipe recipe, @NotNull OCParams params,
                               @NotNull OCResult result) {
             if (machine instanceof IOverclockMachine overclockMachine) {
-                if (GTUtil.getTierByVoltage(result.getEut()) > overclockMachine.getMaxOverclockTier()) {
+                if (RecipeHelper.getRecipeEUtTier(recipe) > overclockMachine.getMaxOverclockTier()) {
                     return null;
                 }
 
-                var modifiedRecipe = RecipeHelper.applyOverclock(overclockingLogic, recipe,
+                return RecipeHelper.applyOverclock(overclockingLogic, recipe,
                         overclockMachine.getOverclockVoltage(),
                         params, result);
-                if (!modifiedRecipe.modified) {
-                    modifiedRecipe.duration = result.getDuration();
-                    modifiedRecipe.tickInputs.put(EURecipeCapability.CAP, List.of(new Content(result.getEut(),
-                            ChanceLogic.getMaxChancedValue(), ChanceLogic.getMaxChancedValue(), 0, null, null)));
-
-                    if (result.getParallel() > 1) {
-                        modifiedRecipe = ParallelLogic
-                                .applyParallel(machine, modifiedRecipe, result.getParallel(), false)
-                                .getFirst();
-                    }
-                    result.reset();
-                    modifiedRecipe.modified = true;
-                }
-
-                return modifiedRecipe;
             }
             if (machine instanceof ITieredMachine tieredMachine &&
                     result.getEut() > tieredMachine.getTier()) {
@@ -181,6 +161,8 @@ public class GTRecipeModifiers {
                 var recipeEU = RecipeHelper.getInputEUt(recipe);
                 var parallelRecipe = ParallelLogic.applyParallel(machine, recipe, hatch.getCurrentParallel(),
                         modifyDuration);
+                if (parallelRecipe.getSecond() == 0)
+                    return null;
                 result.init(recipeEU, recipe.duration, parallelRecipe.getSecond());
                 return parallelRecipe.getFirst();
             }
@@ -245,9 +227,9 @@ public class GTRecipeModifiers {
 
             if (coilMachine.getCoilTier() == 0) {
                 // 75% speed with cupro coils
-                result.setDuration(Math.max(1, (int) recipe.duration * 4 / 3));
+                result.setDuration(Math.max(1, (int) result.getDuration() * 4 / 3));
             } else {
-                result.setDuration(Math.max(1, (int) (recipe.duration * 2.0 / (tier + 1))));
+                result.setDuration(Math.max(1, (int) (result.getDuration() * 2.0 / (tier + 1))));
             }
             return re;
         }
