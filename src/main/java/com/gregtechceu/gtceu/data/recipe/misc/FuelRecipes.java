@@ -69,7 +69,7 @@ public class FuelRecipes {
                 .save(provider);
 
         LARGE_BOILER_RECIPES.recipeBuilder("oil_heavy")
-                .inputFluids(OilHeavy.getFluid(32))
+                .inputFluids(HeavyOil.getFluid(32))
                 .duration(10)
                 .save(provider);
 
@@ -168,7 +168,7 @@ public class FuelRecipes {
                 .save(provider);
 
         COMBUSTION_GENERATOR_FUELS.recipeBuilder("light_oil")
-                .inputFluids(OilLight.getFluid(32))
+                .inputFluids(LightOil.getFluid(32))
                 .duration(5)
                 .EUt(-V[LV])
                 .save(provider);
