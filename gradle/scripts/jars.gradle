@@ -1,37 +1,33 @@
 shadowJar {
-    dependsOn shadowJar.configurations
+    from jar.outputs
     configurations = [project.configurations.shadow]
-    archiveClassifier = "dev-shadow"
-    minimize()
-    relocate("org.jgrapht", "${maven_group}.repack.org.jgrapht")
-    relocate("org.jheaps", "${maven_group}.repack.org.jheaps")
-    relocate("org.apfloat", "${maven_group}.repack.org.apfloat")
+    archiveClassifier = "dev"
 }
 
-tasks.register('slimJar', Jar) {
+slimJar {
+    from sourceSets.main.output
     archiveClassifier = "dev-slim"
-    inputFile.set shadowJar.archiveFile
 }
 
 obfuscation {
     reobfuscate(tasks.named('slimJar'), sourceSets.main) {
-        addNestedDependencies = false
         archiveClassifier = "slim"
     }
     reobfuscate(tasks.named('shadowJar'), sourceSets.main) {
-        archiveClassifier = "shadow"
+        archiveClassifier = null
+        archiveClassifier.convention(null)
     }
 }
 
 jar {
-    exclude ".cache/*"
-
-    archiveClassifier = "dev"
+    archiveClassifier = "dev-no-shadow"
+    archiveClassifier.convention("dev-no-shadow")
+    enabled = false
 }
 
-remapJar {
-    inputFile.set shadowJar.archiveFile
-    dependsOn shadowJar
+reobfJar {
+    archiveClassifier = "no-shadow"
+    enabled = false
 }
 
 tasks.register('sourcesJar', Jar) {
@@ -46,6 +42,8 @@ base {
 
 afterEvaluate {
     tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
+        exclude ".cache/*"
+
         manifest.attributes([
                 'MixinConfigs': 'gtceu.mixins.json',
                 'Specification-Title': project.name,
